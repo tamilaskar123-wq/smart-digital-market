@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMART DIGITAL MARKET - Cart Demo</title>
+  <style>
+    :root { font-family: Arial, sans-serif; color: #18212f; }
+    body { margin: 0; padding: 18px; background: #f4f6f9; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .note { color: #596579; font-size: 14px; margin: 0 0 18px; }
+    .product, .cart { background: white; border-radius: 12px; padding: 15px; margin: 12px 0; box-shadow: 0 2px 9px #0000000d; }
+    .product h2, .cart h2 { font-size: 17px; margin: 0 0 8px; }
+    .price { font-weight: 700; margin: 7px 0 12px; }
+    .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    button { border: 0; border-radius: 8px; padding: 10px 14px; font-size: 15px; cursor: pointer; }
+    .qty { background: #e9edf3; min-width: 42px; font-weight: 700; }
+    .add { background: #1769d2; color: white; }
+    .remove { background: #fff0f0; color: #b42318; }
+    .cart-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #edf0f4; }
+    .total { font-size: 18px; font-weight: 700; text-align: right; margin-top: 14px; }
+    .empty { color: #687386; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>SMART DIGITAL MARKET</h1>
+  <p class="note">Separate quantity and Add to Cart demo. Edit the sample products in the script when integrating.</p>
+
+  <section id="products">
+    <article class="product" data-id="refine-oil" data-name="Refine Oil" data-price="170">
+      <h2>Refine Oil</h2>
+      <div class="price">₹170</div>
+      <div class="controls">
+        <button class="qty" type="button" data-action="minus" aria-label="Decrease quantity">−</button>
+        <strong class="quantity">1</strong>
+        <button class="qty" type="button" data-action="plus" aria-label="Increase quantity">+</button>
+        <button class="add" type="button" data-action="add">Add to Cart</button>
+      </div>
+    </article>
+
+    <article class="product" data-id="masur-dal" data-name="Masur Dal" data-price="95">
+      <h2>Masur Dal</h2>
+      <div class="price">₹95</div>
+      <div class="controls">
+        <button class="qty" type="button" data-action="minus" aria-label="Decrease quantity">−</button>
+        <strong class="quantity">1</strong>
+        <button class="qty" type="button" data-action="plus" aria-label="Increase quantity">+</button>
+        <button class="add" type="button" data-action="add">Add to Cart</button>
+      </div>
+    </article>
+  </section>
+
+  <section class="cart">
+    <h2>My Cart</h2>
+    <div id="cartItems"><p class="empty">Your cart is empty.</p></div>
+    <div class="total" id="cartTotal">Total: ₹0</div>
+  </section>
+
+  <script>
+    // Demo cart uses this browser's localStorage. It is separate from Firebase.
+    const cart = new Map();
+    const quantities = new Map();
+
+    document.querySelectorAll('.product').forEach(card => {
+      quantities.set(card.dataset.id, 1);
+    });
+
+    document.getElementById('products').addEventListener('click', event => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      const card = button.closest('.product');
+      const id = card.dataset.id;
+      let qty = quantities.get(id) || 1;
+
+      if (button.dataset.action === 'plus') qty += 1;
+      if (button.dataset.action === 'minus') qty = Math.max(1, qty - 1);
+      quantities.set(id, qty);
+      card.querySelector('.quantity').textContent = qty;
+
+      if (button.dataset.action === 'add') {
+        const old = cart.get(id);
+        cart.set(id, {
+          id,
+          name: card.dataset.name,
+          price: Number(card.dataset.price),
+          quantity: (old?.quantity || 0) + qty
+        });
+        renderCart();
+      }
+    });
+
+    function renderCart() {
+      const container = document.getElementById('cartItems');
+      const items = [...cart.values()];
+      if (!items.length) {
+        container.innerHTML = '<p class="empty">Your cart is empty.</p>';
+      } else {
+        container.innerHTML = items.map(item => `
+          <div class="cart-row">
+            <span>${escapeHtml(item.name)} × ${item.quantity}</span>
+            <span>₹${item.price * item.quantity}</span>
+            <button class="remove" type="button" data-remove="${item.id}">Remove</button>
+          </div>
+        `).join('');
+      }
+      const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      document.getElementById('cartTotal').textContent = `Total: ₹${total}`;
+    }
+
+    document.getElementById('cartItems').addEventListener('click', event => {
+      const button = event.target.closest('button[data-remove]');
+      if (!button) return;
+      cart.delete(button.dataset.remove);
+      renderCart();
+    });
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+  </script>
+</body>
+</html>
